@@ -194,7 +194,20 @@ UPROGS=\
 	$U/_wc\
 	$U/_zombie\
 
-
+UPROGS += \
+        $U/_sleep
+        
+UPROGS += \
+        $U/_pingpong
+        
+UPROGS += \
+        $U/_primes
+        
+UPROGS += \
+        $U/_find
+        
+UPROGS += \
+        $U/_xargs
 
 
 ifeq ($(LAB),$(filter $(LAB), pgtbl lock))
@@ -253,6 +266,10 @@ ifeq ($(LAB),net)
 UPROGS += \
 	$U/_nettests
 endif
+
+
+
+
 
 UEXTRA=
 ifeq ($(LAB),util)
