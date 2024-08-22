@@ -364,3 +364,14 @@ sfence_vma()
 
 typedef uint64 pte_t;
 typedef uint64 *pagetable_t; // 512 PTEs
+
+
+
+// add for backtrace
+static inline uint64
+Rfp()
+{
+  uint64 a;
+  asm volatile("mv %0, s0" : "=r" (a) );
+  return a;
+}
