@@ -9,6 +9,7 @@
 #include "riscv.h"
 #include "defs.h"
 
+
 void freerange(void *pa_start, void *pa_end);
 
 extern char end[]; // first address after kernel.
@@ -21,12 +22,19 @@ struct run {
 struct {
   struct spinlock lock;
   struct run *freelist;
-} kmem;
+} kmem[NCPU]; // each cpu has one 
 
 void
 kinit()
 {
-  initlock(&kmem.lock, "kmem");
+  int i = 0;
+  while(i < NCPU){
+    initlock(&kmem[i].lock, "kmem");
+    i++;
+
+  }
+
+  
   freerange(end, (void*)PHYSTOP);
 }
 
@@ -56,10 +64,13 @@ kfree(void *pa)
 
   r = (struct run*)pa;
 
-  acquire(&kmem.lock);
-  r->next = kmem.freelist;
-  kmem.freelist = r;
-  release(&kmem.lock);
+  push_off(); // need tu interrupt before get cpuid()
+  int id = cpuid();
+  acquire(&kmem[id].lock);
+  r->next = kmem[id].freelist;
+  kmem[id].freelist = r;
+  release(&kmem[id].lock);
+  pop_off();
 }
 
 // Allocate one 4096-byte page of physical memory.
@@ -70,11 +81,35 @@ kalloc(void)
 {
   struct run *r;
 
-  acquire(&kmem.lock);
-  r = kmem.freelist;
+  
+  push_off();
+  int id = cpuid();
+  acquire(&kmem[id].lock);
+  r = kmem[id].freelist;
   if(r)
-    kmem.freelist = r->next;
-  release(&kmem.lock);
+    kmem[id].freelist = r->next;
+  else {
+    int nid=0;
+    while(nid < NCPU){
+      if (nid == id){
+        nid++;
+        continue;
+      }       
+      acquire(&kmem[nid].lock);
+      r = kmem[nid].freelist;
+      if (r){
+        kmem[nid].freelist = r->next;
+        release(&kmem[nid].lock);
+        break;
+      }
+      release(&kmem[nid].lock);
+      ++nid;
+    }
+    
+  }
+  release(&kmem[id].lock);
+  pop_off();
+
 
   if(r)
     memset((char*)r, 5, PGSIZE); // fill with junk
