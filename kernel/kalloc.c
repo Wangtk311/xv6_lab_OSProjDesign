@@ -23,10 +23,14 @@ struct {
   struct run *freelist;
 } kmem;
 
+struct spinlock reflock;
+uint8 refercount[PHYSTOP/PGSIZE];
+
 void
 kinit()
 {
   initlock(&kmem.lock, "kmem");
+  initlock(&reflock, "ref");
   freerange(end, (void*)PHYSTOP);
 }
 
@@ -36,7 +40,13 @@ freerange(void *pa_start, void *pa_end)
   char *p;
   p = (char*)PGROUNDUP((uint64)pa_start);
   for(; p + PGSIZE <= (char*)pa_end; p += PGSIZE)
+  {
+    acquire(&reflock);
+    refercount[(uint64)p / PGSIZE] = 0;
+    release(&reflock);
+    
     kfree(p);
+  }
 }
 
 // Free the page of physical memory pointed at by v,
@@ -74,6 +84,9 @@ kalloc(void)
   r = kmem.freelist;
   if(r)
     kmem.freelist = r->next;
+  if(r)
+    refercount[PGROUNDUP((uint64)r)/PGSIZE] = 1; 
+
   release(&kmem.lock);
 
   if(r)
