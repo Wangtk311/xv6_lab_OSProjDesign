@@ -106,9 +106,11 @@ int
 main(int argc, char *argv[])
 {
  // init lock
-  for (int i = 0; i < NBUCKET; i++){
+  int i = 0;
+  while(i < NBUCKET){
     pthread_mutex_init(&lock[i], NULL);
-  } 
+    i++;
+  }
 
   pthread_t *tha;
   void *value;
