@@ -1,4 +1,5 @@
-// Shell.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Winfinite-recursion"
 
 #include "kernel/types.h"
 #include "user/user.h"
@@ -491,3 +492,5 @@ nulterminate(struct cmd *cmd)
   }
   return cmd;
 }
+
+#pragma GCC diagnostic pop
