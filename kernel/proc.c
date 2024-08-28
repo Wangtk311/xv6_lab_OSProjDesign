@@ -118,11 +118,7 @@ allocproc(void)
 
 found:
   p->pid = allocpid();
-  
-    // set alarm related parameters
-  p->alarm_interval = 0;
-  p->alarm_ticks = 0;
-  p->alarm_handler = 0;
+  p->state = USED;
 
   // Allocate a trapframe page.
   if((p->trapframe = (struct trapframe *)kalloc()) == 0){
@@ -145,6 +141,10 @@ found:
   p->context.ra = (uint64)forkret;
   p->context.sp = p->kstack + PGSIZE;
 
+  // Initialize alarmticks
+  p->alarmticks = 0;
+  p->alarminterval = 0;
+  p->sigreturned = 1;
   return p;
 }
 
